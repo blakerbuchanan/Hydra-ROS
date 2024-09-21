@@ -22,7 +22,7 @@
     <arg name="semantic_map_dir" default="$(find hydra_ros)/config/color" if="$(arg use_gt_semantics)"/>
     <arg name="semantic_map_dir" default="$(find semantic_inference)/config/colors" unless="$(arg use_gt_semantics)"/>
     <arg name="semantic_map_path" default="$(arg semantic_map_dir)/$(arg labelspace_name).csv"/>
-    <arg name="semantic_label_remap_filepath" default="$(find hydra)/config/label_remaps/uhumans2_office.yaml" if="$(arg use_single_channel_label_image)"/>
+    <arg name="semantic_label_remap_filepath" default="$(find hydra)/config/label_remaps/bosch_office.yaml" if="$(arg use_single_channel_label_image)"/>
 
     <!-- TODO(blake.buchanan): Can we get topics that mimic the uHumans2 dataset? -->
     <arg name="rgb_topic" default="/camera/color/image_raw"/> <!--/tesse/left_cam/rgb/image_raw -->
@@ -34,7 +34,7 @@
 
     <arg name="prerecorded_topic" default="/oneformer/labels/image_raw"/>
 
-    <include file="$(find hydra_ros)/launch/static_tfs/uhumans2_static_tfs.xml" if="$(arg use_static_tfs)"/>
+    <include file="$(find hydra_ros)/launch/static_tfs/bosch_stretch_static_tfs.xml" if="$(arg use_static_tfs)"/>
 
     <node pkg="tf2_ros" type="static_transform_publisher" name="fake_world_tf" args="0 0 0 0 0 0 1 map world" if="$(arg use_gt_frame)"/>
 
