@@ -2,7 +2,7 @@
     <arg name="sim_time_required" default="true"/>
     <param name="use_sim_time" value="$(arg sim_time_required)"/>
 
-    <arg name="config_dir" default="$(find hydra)/config/bosch_stretch"/>
+    <arg name="config_dir" default="$(find hydra)/config/uhumans2"/>
     <arg name="use_gt_frame" default="true" doc="use simulator-provided tf frame"/>
     <arg name="use_gt_semantics" default="true" doc="use simulator-provider semantics"/>
     <arg name="use_static_tfs" default="true" doc="publish static tfs from file"/>
@@ -12,9 +12,9 @@
     <arg name="use_single_channel_label_image" default="false"/>
 
     <!-- TODO(blake.buchanan): Verify robot_frame, odom_frame, and sensor_frame from stretch data. -->
-    <arg name="robot_frame" default="$(eval 'base_link' if arg('use_gt_frame') else 'base_link_kimera')" doc="robot body tf frame"/>
-    <arg name="odom_frame" default="$(eval 'world' if arg('use_gt_frame') else 'odom')" doc="odometry (map) frame"/>
-    <arg name="sensor_frame" default="$(eval 'aligned_depth_to_color' if arg('use_gt_frame') else 'left_cam_kimera')" doc="camera frame"/>
+    <arg name="robot_frame" default="$(eval 'base_link' if arg('use_gt_frame') else 'base_link')" doc="robot body tf frame"/>
+    <arg name="odom_frame" default="$(eval 'odom' if arg('use_gt_frame') else 'odom')" doc="odometry (map) frame"/>
+    <arg name="sensor_frame" default="$(eval 'camera_link' if arg('use_gt_frame') else 'camera_link')" doc="camera frame"/>
 
     <!-- semantics -->
     <!-- TODO(blake.buchanan): Can we get semantic data? -->
@@ -26,8 +26,8 @@
 
     <!-- TODO(blake.buchanan): Can we get topics that mimic the uHumans2 dataset? -->
     <arg name="rgb_topic" default="/camera/color/image_raw"/> <!--/tesse/left_cam/rgb/image_raw -->
-    <arg name="rgb_info_topic" default="/camera/depth/camera_info"/> <!-- /tesse/left_cam/camera_info -->
-    <arg name="depth_topic" default="/camera/aligned_depth_to_color/image_raw"/> <!-- /tesse/depth_cam/mono/image_raw -->
+    <arg name="rgb_info_topic" default="/camera/color/camera_info"/> <!-- /tesse/left_cam/camera_info -->
+    <arg name="depth_topic" default="/camera/depth/image_raw"/> <!-- /tesse/depth_cam/mono/image_raw -->
     <arg name="label_topic" default="/semantic/image_raw" unless="$(arg use_gt_semantics)"/>
     <arg name="label_topic" default="$(eval '/tesse/seg_cam/converted/image_raw' if arg('use_single_channel_label_image') else '/tesse/seg_cam/rgb/image_raw')"
                             if="$(arg use_gt_semantics)"/> <!-- TODO(blake.buchanan): What should these be? -->
@@ -36,7 +36,7 @@
 
     <include file="$(find hydra_ros)/launch/static_tfs/bosch_stretch_static_tfs.xml" if="$(arg use_static_tfs)"/>
 
-    <node pkg="tf2_ros" type="static_transform_publisher" name="fake_world_tf" args="0 0 0 0 0 0 1 map world" if="$(arg use_gt_frame)"/>
+    <node pkg="tf2_ros" type="static_transform_publisher" name="fake_world_tf" args="0 0 0 0 0 0 1 map odom" if="$(arg use_gt_frame)"/>
 
     <include file="$(find semantic_inference_ros)/launch/semantic_inference.launch"
              pass_all_args="true"
