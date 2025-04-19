@@ -1,0 +1,68 @@
+<launch>
+    <arg name="sim_time_required" default="true"/>
+    <param name="use_sim_time" value="$(arg sim_time_required)"/>
+
+    <arg name="use_prerecorded_semantics" default="false"/>
+
+    <arg name="config_dir" default="$(find hydra)/config/uhumans2"/>
+    <arg name="use_gt_frame" default="true" doc="use simulator-provided tf frame"/>
+    <arg name="use_gt_semantics" default="false" doc="use simulator-provider semantics"/>
+    <arg name="use_static_tfs" default="true" doc="publish static tfs from file"/>
+    <arg name="color_mesh_by_label" default="false" doc="display mesh colored by semantic label"/>
+    <arg name="use_oriented_bounding_boxes" default="false"/>
+    <arg name="use_2d_places" default="true"/>
+    <arg name="use_single_channel_label_image" default="false"/>
+
+    <!-- TODO(blake.buchanan): Verify robot_frame, odom_frame, and sensor_frame from stretch data. -->
+    <arg name="robot_frame" default="$(eval 'base_link' if arg('use_gt_frame') else 'base_link_kimera')" doc="robot body tf frame"/>
+    <arg name="odom_frame" default="$(eval 'world' if arg('use_gt_frame') else 'odom')" doc="odometry (map) frame"/>
+    <arg name="sensor_frame" default="$(eval 'camera_color_optical_frame' if arg('use_gt_frame') else 'left_cam_kimera')" doc="camera frame"/>
+
+    <!-- semantics -->
+    <arg name="labelspace_name" default="$(eval 'bosch_office' if arg('use_gt_semantics') else 'bosch_office')" doc="semantic label space"/>
+    <arg name="semantic_map_dir" default="$(find hydra_ros)/config/color" if="$(arg use_gt_semantics)"/>
+    <arg name="semantic_map_dir" default="$(find semantic_inference)/config/colors" unless="$(arg use_gt_semantics)"/>
+    <arg name="semantic_map_path" default="$(arg semantic_map_dir)/$(arg labelspace_name).csv"/>
+    <arg name="semantic_label_remap_filepath" default="$(find hydra)/config/label_remaps/bosch_office.yaml" if="$(arg use_single_channel_label_image)"/>
+
+    <arg name="rgb_topic" default="/camera/color/image_raw"/> <!--/tesse/left_cam/rgb/image_raw -->
+    <arg name="rgb_info_topic" default="/camera/color/camera_info"/> <!-- /tesse/left_cam/camera_info -->
+    <arg name="depth_topic" default="/camera/depth/image_raw_corrected"/> <!-- /tesse/depth_cam/mono/image_raw -->
+    <arg name="label_topic" default="semanic_inference/semantic/image_raw" unless="$(arg use_gt_semantics)"/>
+
+    <!-- Since we don't have segmentation images, we use the vlm_planner_eqa_ros node to taken in segmented FeatureImages, convert them and then send them over /camera/semantic/image_raw -->
+    <arg name="label_topic" default="$(eval '/camera/semantic/image_raw' if arg('use_single_channel_label_image') else '/camera/semantic/image_raw')"
+                            if="$(arg use_gt_semantics)"/>
+
+    <arg name="prerecorded_topic" default="/oneformer/labels/image_raw"/>
+
+    <!-- This static TF does not influence the generation of the scene graph... -->
+    <include file="$(find hydra_ros)/launch/static_tfs/bosch_stretch_static_tfs.xml" if="$(arg use_static_tfs)"/>
+
+    <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="fake_world_tf" args="0 0 0 0 0 0 1 map odom" if="$(arg use_gt_frame)"/> -->
+
+    <group unless="$(arg use_gt_semantics)">
+        <remap from="semantic_inference/color/image_raw" to="$(arg rgb_topic)"/>
+        <remap from="semantic_inference/labels/image_raw" to="$(arg prerecorded_topic)" if="$(arg use_prerecorded_semantics)"/>
+        <include file="$(find semantic_inference_ros)/launch/semantic_inference.launch" pass_all_args="true"/>
+    </group>
+
+    <node pkg="vlm_planner_semnav"
+          type="vlm_planner_eqa_ros.py"
+          name="vlm_planner_eqa_ros"
+          output="screen"/>
+
+    <arg name="start_hydra" default="true"/>
+    <group if="$(arg start_hydra)">
+        <include file="$(find hydra_ros)/launch/hydra.launch" pass_all_args="true">
+            <arg name="dataset_name" default="bosch_stretch"/>
+            <arg name="rviz_file" default="bosch_stretch.rviz"/>
+        </include>
+    </group>
+ 
+    <!-- <include file="$(find hydra_ros)/launch/hydra.launch" pass_all_args="true">
+        <arg name="dataset_name" default="bosch_stretch"/>
+        <arg name="rviz_file" default="bosch_stretch.rviz"/>
+    </include> -->
+
+</launch>
